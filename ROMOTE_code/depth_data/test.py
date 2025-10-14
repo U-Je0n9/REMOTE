@@ -1,4 +1,6 @@
-import os
+import sys, os
+sys.path.append('/home/ujeong/tmp/REMOTE/Depth-Anything-V2')
+
 import cv2
 import torch
 import numpy as np
@@ -17,11 +19,11 @@ model_configs = {
 # init
 encoder = 'vitl'  
 model = DepthAnythingV2(**model_configs[encoder])
-model.load_state_dict(torch.load(f'checkpoints/depth_anything_v2_{encoder}.pth', map_location='cpu'))
+model.load_state_dict(torch.load(f'/home/ujeong/tmp/REMOTE/Depth-Anything-V2/checkpoints/depth_anything_v2_{encoder}.pth', map_location='cpu'))
 model = model.to(DEVICE).eval()
 
-input_dir = "UMKE_IMG"
-output_dir = "depth_data_umke"
+input_dir = "/home/ujeong/tmp/REMOTE/datasets/UMKE_IMG"
+output_dir = "/home/ujeong/tmp/REMOTE/datasets/depth_data_umke"
 os.makedirs(output_dir, exist_ok=True)
 
 for filename in tqdm(os.listdir(input_dir), desc="Processing images"):
