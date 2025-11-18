@@ -1,141 +1,101 @@
-# REMOTE: A Unified Multimodal Relation Extraction Framework with Multilevel Optimal Transport and Mixture-of-Experts
-[![arXiv](https://img.shields.io/badge/arXiv-2509.04844-b31b1b.svg)](https://www.arxiv.org/abs/2509.04844)
+# REMOTE 학습 가이드
+---
 
-The source code for **REMOTE: A Unified Multimodal Relation Extraction Framework with Multilevel Optimal Transport and Mixture-of-Experts**.
-
-# 🔥 News
-
-🎉🎉🎉 **[July. 2025]** We are delighted to announce that our paper, **"REMOTE: A Unified Multimodal Relation Extraction Framework with Multilevel Optimal Transport and Mixture-of-Experts"**, has been accepted by ACM MM 2025!
-
-</h5>
-<p align="center">
-    <img src="./Image/model.jpg" alt="Pipeline" style="width:75%; height:auto;">
-</p>
-
-📆 **[July. 2025]** [UMRE dataset](https://drive.google.com/file/d/17N_GVv5sCnT55ZUi_5dXl66bac1TuUlC/view?usp=sharing) has been released. Prompt and Explanations for various relations can be found in ACM_supplement.pdf.
-
-# 🏆 UMRE Dataset
-</div>
-
-<br>
-
-<div align="center">
-<img src='./Image/dataset.jpg' width='60%'>
-</div>
-
-Our UMRE dataset is a further development of the [MNRE dataset](https://github.com/thecharm/MNRE) and [MORE dataset](https://github.com/NJUNLP/MORE).
+이 문서는 커스텀 데이터셋을 UMRE 형식으로 준비하여 REMOTE 모델을 학습하는 전과정을 다룹니다.
 
 ---
 
-## 📊 Further Experience
+## 주요 디렉터리
 
-### Question 1: The benefits of MLLM-generated captions
-As shown in Fig.5 of our paper, we have compared results across different captions and without captions. Captions are effective in bridging the modality gap between image and text . Additionally, we invite graduate students with strong English proficiency to evaluated caption accuracy (CapAcc) and length (CapLen). Results are as follows:
-
-| MLLM           | CapLen | CapAcc (\%) | F1-Score (\%) |
-|----------------|--------|-------------|---------------|
-| Without Caption|        |             | 63.11         |
-| BLIP2          | 12.02  | 83.15       | 66.36         |
-| Llama3.2-11B   | 40.36  | 89.27       | 67.57         |
-| Qwen2-VL-7B    | 32.76  | 91.31       | 68.23         |
-| Qwen2.5-VL-7B  | 28.43  | 93.37       | **69.17**         |
-
-The table shows that caption length does not directly correlate with performance; instead, caption accuracy (CapAcc) is the key factor affecting results .
-
-### Question 2: Annotation Consistency of the UMRE Dataset
-Because ambiguous hierarchical relations exist, such as "/per/org/member of" and "/per/org/leader of", there may be discrepancies in annotation results among different annotators. To resolve such conflicts, a third independent adjudicator was introduced to evaluate and finalize the annotations. Per-Modality and Per-Relation Kappa Value as follows:
-
-### Table 1: Kappa Value by Per Relational Triplet Type
-| Relational Triplet Type                | Kappa Value   |
-|----------------------------------------|---------------|
-| textual entities-textual entities      | 0.6831        |
-| visual objects-visual objects          | 0.6748        |
-| textual entities-visual objects        | 0.8173        |
-
-### Table 2: Kappa Value for Per Relation Type
-| Relation Type                          | Kappa Value |
-|--------------------------------------|---------------|
-| none                                 | 0.7273        |
-| /per/loc/place_of_governance         | 0.6956        |
-| /per/misc/party                      | 0.8613        |
-| /per/org/member_of                   | 0.6656        |
-| /per/per/self                        | 0.9233        |
-| /per/misc/nationality                | 0.7192        |
-| /loc/loc/self                        | 0.9280        |
-| /per/misc/present_in                 | 0.6873        |
-| /per/loc/place_of_residence          | 0.6543        |
-| /org/org/self                        | 0.8335        |
-| /misc/misc/self                      | 0.8700        |
-| /per/per/opponent                    | 0.6219        |
-| /per/loc/place_of_birth              | 0.6758        |
-| /per/per/partner                     | 0.6569        |
-| /per/org/opposed_to                  | 0.6712        |
-| /loc/loc/contain                     | 0.8390        |
-| /org/loc/locate_at                   | 0.6380        |
-| /per/misc/president                  | 0.8123        |
-| /misc/loc/held_on                    | 0.6649        |
-| /per/org/leader_of                   | 0.6077        |
-| /org/org/subsidiary                  | 0.7072        |
-| /per/per/relatives                   | 0.8889        |
-| /per/misc/awarded                    | 0.6707        |
-| /misc/misc/part_of                   | 0.6913        |
-| /per/misc/race                       | 0.6955        |
-| /per/per/alumni                      | 0.6666        |
-| /per/misc/religion                   | 0.6315        |
-| /org/misc/present_in                 | 1.0000        |
-
-Kappa values are used to measure the agreement between annotators.
+| 경로 | 설명 |
+|------|------|
+| `REMOTE/preprocess` | 데이터셋 변환 스크립트. `run_all.py`로 전체 파이프라인 실행 |
+| `ROMOTE_code` | 학습/평가 스크립트 및 유틸리티 |
+| `Depth-Anything-V2` | DepthMap 생성을 위한 의존성 |
 
 ---
 
-## 📦 Installation Guide
+## 환경 설정
 
-### 1.  Download Required Datasets
-
-#### UMRE Dataset
-Download the [UMRE Dataset](https://drive.google.com/file/d/17N_GVv5sCnT55ZUi_5dXl66bac1TuUlC/view?usp=sharing) and extract it:
 ```bash
-unzip UMRE_Data.zip -d datasets/
+pip install -r requirements.txt
 ```
 
-#### UMKE Partner Supplementary Files
-Download the [UMKE Partner Supplementary Files](https://drive.google.com/file/d/1ozJ25WaSnHJ7De84tdAWncBU9YV57nYG/view?usp=sharing) and extract them:
-```bash
-unzip umke_partner.zip -d datasets/
-```
-
-### 2.  Generate Depth Maps
-
-#### Step 1: Set up Depth Estimation Model
-1.  Clone the official [Depth-Anything-V2 repository](https://github.com/DepthAnything/Depth-Anything-V2):
+### DepthMap 생성
 ```bash
 git clone https://github.com/DepthAnything/Depth-Anything-V2
 cd Depth-Anything-V2
-```
-2.  Follow their installation instructions to set up dependencies.
+# 환경 및 체크포인트는 공식 가이드를 따르세요.
 
-#### Step 2: Process UMKE Images
-Return to your ROMOTE project directory and generate depth maps:
-```bash
-python ROMOTE_code/depth_data/test.py 
+# REMOTE 루트로 복귀
+python ROMOTE_code/depth_data/test.py
 ```
-This will generate corresponding depth maps for all images in the UMKE dataset.
 
 ---
 
-### 3.  Execute Training/Inference
+## 데이터 전처리 파이프라인
 
-Run the main pipeline with optimized configurations:
+아래 명령 한 번으로 모든 단계를 순차 실행합니다.
+```bash
+cd REMOTE/preprocess
+python run_all.py
+# 예시 옵션:
+#   python run_all.py --skip split --skip minus_trans
+```
+
+| 순서 | 스크립트 | 역할 |
+|------|----------|------|
+| 1 | `create_dataset.py` | 대화 JSON(L) + `cr_label` → `remote_re.jsonl` 생성 |
+| 2 | `split.py` | 계층적 분할 → `train/val/test_set_xywh.json` |
+| 3 | `coordinate_trans.py` | `[x, y, w, h]` → `[x1, y1, x2, y2]` 변환 (`*_set_str.json`) |
+| 4 | `str_to_list.py` | 텍스트 엔티티 name을 토큰 슬라이스로 교체 (`*_set.json`) |
+| 5 | `minus_trans.py` | 박스 좌표 음수값 0으로 클램프 (`*_set_bbox_fixed.json`) |
+| 6 | `pos_trans.py` | 이미지별 `[OBJk]` → bbox 매핑(`pos_umke.json`) 구축 |
+
+**커스텀 데이터셋 통계** (관계별 50% 길이 내에서 최대 3개 멘션 사용용):
+
+| 분할 | 샘플 수 |
+|------|-------:|
+| Train | 92,064 |
+| Val   | 11,520 |
+| Test  | 11,520 |
+| **Total** | **115,079** |
+
+---
+
+## 학습 & 테스트
+
+### 하이퍼파라미터
+- `epochs = 3`
+- `batch_size = 16`
+- `learning_rate = 1e-5`
+
+### 학습 실행
 ```bash
 bash ROMOTE_code/run_umke_best.sh
 ```
 
-> **Tip**: Ensure all dependencies are installed and paths in `run_umke_best.sh` match your directory structure.
+### 테스트 / 추론
+```bash
+python ROMOTE_code/run_umke_best.py \
+  --do_test \
+  --test_path /path/to/test_set_bbox_fixed.json \
+  --batch_size 16 \
+  --init_checkpoint ckpt/UMKE_16_1e-05__20251029_105012
+```
+실행하면 클래스별 정밀도/재현율/F1을 출력하고, 결과 요약은 `test.txt`, 체크포인트는 `ckpt/`에 저장됩니다.
 
 ---
 
-# Acknowledgement  
-Our dataset is extended based on the methods from [RIVEG](https://github.com/JinYuanLi0012/RiVEG) and [PGIM](https://github.com/JinYuanLi0012/PGIM) on the [MNRE dataset](https://github.com/thecharm/MNRE) and [MORE dataset](https://github.com/NJUNLP/MORE), followed by manual annotation and correction of relational triplets.  
+## 실험 결과 (커스텀 데이터셋)
 
-Our code is built upon the open-sourced [HVFormer](https://github.com/liuxiyang641/HVFormer) and [MOREformer](https://github.com/NJUNLP/MORE). Thanks for their great work!
+```
+precision  recall  f1-score  support
+attr     0.9991   0.9993    0.9992    8059
+part     1.0000   0.9524    0.9756      21
+up_down  0.9982   0.9982    0.9982    3428
 
+accuracy = 0.9989 on 11,508 samples
+macro avg = (P 0.9991, R 0.9833, F1 0.9910)
+weighted avg = (P 0.9989, R 0.9989, F1 0.9989)
+```
