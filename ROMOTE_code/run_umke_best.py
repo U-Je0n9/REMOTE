@@ -29,46 +29,36 @@ logger = logging.getLogger(__name__)
 
 DATA_PATH = {
     'UMKE': {
-        'train': '/home/ujeong/KETI/REMOTE/datasets/train_set.json',
-        'valid': '/home/ujeong/KETI/REMOTE/datasets/val_set.json',
-        'test': '/home/ujeong/KETI/REMOTE/datasets/test_set.json',
-        'train_ent_dict': '/home/ujeong/KETI/REMOTE/datasets/pos_umke.json',
-        'valid_ent_dict': '/home/ujeong/KETI/REMOTE/datasets/pos_umke.json',
-        'test_ent_dict': '/home/ujeong/KETI/REMOTE/datasets/pos_umke.json',
+        'train': 'REMOTE/datasets/train_set.json',
+        'valid': 'REMOTE/datasets/val_set.json',
+        'test': 'REMOTE/datasets/test_set.json',
+        'train_ent_dict': 'REMOTE/datasets/pos_umke.json',
+        'valid_ent_dict': 'REMOTE/datasets/pos_umke.json',
+        'test_ent_dict': 'REMOTE/datasets/pos_umke.json',
     }
 }
 
 
 IMG_PATH = {
     'UMKE': {
-        'train': '//home/ujeong/KETI/REMOTE/datasets/UMKE_IMG',
-        'valid': '//home/ujeong/KETI/REMOTE/datasets/UMKE_IMG',
-        'test': '//home/ujeong/KETI/REMOTE/datasets/UMKE_IMG',
+        'train': 'REMOTE/datasets/UMKE_IMG',
+        'valid': 'REMOTE/datasets/UMKE_IMG',
+        'test': 'REMOTE/datasets/UMKE_IMG',
     }
 }
 
 
 DEP_PATH = {
     'UMKE': {
-        'train': '/home/ujeong/KETI/REMOTE/datasets/depth_data_umke',
-        'valid': '/home/ujeong/KETI/REMOTE/datasets/depth_data_umke',
-        'test': '/home/ujeong/KETI/REMOTE/datasets/depth_data_umke',
+        'train': 'REMOTE/datasets/depth_data_umke',
+        'valid': 'datasets/depth_data_umke',
+        'test': 'REMOTE/datasets/depth_data_umke',
     }
 }
 
 
-# #qwen2.5 vl
-# None = {
-#     'UMKE': {
-#         'train': '/home/ujeong/KETI/REMOTE/datasets/cap_qwenvl_simply.json',
-#         'valid': '/home/ujeong/KETI/REMOTE/datasets/cap_qwenvl_simply.json',
-#         'test': '/home/ujeong/KETI/REMOTE/datasets/cap_qwenvl_simply.json',
-#     }
-# }
-
-
 #relation ID key-value
-re_path = '/home/ujeong/KETI/REMOTE/ROMOTE_code/rel2id_umke_partner.json'
+re_path = 'EMOTE/ROMOTE_code/rel2id_umke_partner.json'
 
 #seed
 def set_seed(seed=2024):

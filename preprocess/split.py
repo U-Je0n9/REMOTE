@@ -1,11 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-remote_re.jsonl → train/val/test 분할 스크립트
-- 입력: JSONL (한 줄당 하나의 샘플)
-- 출력: train_set_xywh.json / val_set_xywh.json / test_set_xywh.json (기본은 JSON 배열)
-"""
-
 import argparse, json, os, random
 from collections import defaultdict
 from typing import List, Dict, Any, Tuple
@@ -26,9 +18,7 @@ def split_ratios(n: int, ratios: Tuple[float, float, float]) -> Tuple[int, int, 
     n_tr = int(round(n * tr))
     n_va = int(round(n * va))
     n_te = n - n_tr - n_va
-    # rounding 보정
     if n_te < 0:
-        # 가장 큰 몫에서 1씩 빼며 보정
         while n_te < 0:
             if n_tr >= n_va:
                 n_tr -= 1
@@ -73,9 +63,9 @@ def write_jsonl(path: str, data: List[Dict[str, Any]]):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--input", "-i", default="/home/ujeong/KETI/REMOTE/datasets/remote_re.jsonl",
+    ap.add_argument("--input", "-i", default="REMOTE/datasets/remote_re.jsonl",
                     help="입력 JSONL 경로")
-    ap.add_argument("--outdir", "-o", default="/home/ujeong/KETI/REMOTE/datasets",
+    ap.add_argument("--outdir", "-o", default="REMOTE/datasets",
                     help="출력 디렉터리")
     ap.add_argument("--train", type=float, default=0.8, help="train 비율")
     ap.add_argument("--val",   type=float, default=0.1, help="val 비율")
@@ -100,7 +90,6 @@ def main():
     else:
         tr, va, te = stratified_split(items, ratios, seed=args.seed, key="relation")
 
-    # 파일명
     f_tr = os.path.join(args.outdir, "train_set_xywh.jsonl" if args.jsonl else "train_set_xywh.json")
     f_va = os.path.join(args.outdir, "val_set_xywh.jsonl"   if args.jsonl else "val_set_xywh.json")
     f_te = os.path.join(args.outdir, "test_set_xywh.jsonl"  if args.jsonl else "test_set_xywh.json")

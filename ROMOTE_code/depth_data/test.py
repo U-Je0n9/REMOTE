@@ -1,5 +1,5 @@
 import sys, os
-sys.path.append('/home/ujeong/KETI/REMOTE/Depth-Anything-V2')
+sys.path.append('REMOTE/Depth-Anything-V2')
 
 import cv2
 import torch
@@ -19,11 +19,11 @@ model_configs = {
 # init
 encoder = 'vitl'  
 model = DepthAnythingV2(**model_configs[encoder])
-model.load_state_dict(torch.load(f'/home/ujeong/KETI/REMOTE/Depth-Anything-V2/checkpoints/depth_anything_v2_{encoder}.pth', map_location='cpu'))
+model.load_state_dict(torch.load(f'REMOTE/Depth-Anything-V2/checkpoints/depth_anything_v2_{encoder}.pth', map_location='cpu'))
 model = model.to(DEVICE).eval()
 
-input_dir = "/home/ujeong/KETI/REMOTE/datasets/UMKE_IMG"
-output_dir = "/home/ujeong/KETI/REMOTE/datasets/depth_data_umke"
+input_dir = "REMOTE/datasets/UMKE_IMG"
+output_dir = "REMOTE/datasets/depth_data_umke"
 os.makedirs(output_dir, exist_ok=True)
 
 

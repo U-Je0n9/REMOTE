@@ -1,20 +1,16 @@
-# fix_negative_bbox.py
-# -*- coding: utf-8 -*-
 import json, os
 from copy import deepcopy
 
-DATA_DIR = "/home/ujeong/KETI/REMOTE/datasets"
+DATA_DIR = "REMOTE/datasets"
 INPUT_FILES = ["train_set.json", "val_set.json", "test_set.json"]
-OUTPUT_SUFFIX = "_bbox_fixed.json"  # 예: train_set_bbox_fixed.json
+OUTPUT_SUFFIX = "_bbox_fixed.json" 
 
 def clamp_bbox(pos):
-    """pos(리스트)에 음수값이 있으면 0으로 치환."""
     if not isinstance(pos, list):
         return pos
     return [x if isinstance(x, (int, float)) and x >= 0 else 0 for x in pos]
 
 def fix_sample(sample):
-    """샘플의 h/t.pos에서 음수 좌표를 0으로 교체."""
     out = deepcopy(sample)
     for key in ("h", "t"):
         if key not in out or not isinstance(out[key], dict):

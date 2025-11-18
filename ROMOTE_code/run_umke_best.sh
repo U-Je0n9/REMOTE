@@ -1,11 +1,9 @@
-#!/bin/bash
-
 DATASET_NAME="UMKE"
 BERT_NAME='bert-base-multilingual-uncased'
 VIT_NAME='openai/clip-vit-base-patch32'
 CUDA_VISIBLE_DEVICES=0
 
-python /home/ujeong/KETI/REMOTE/ROMOTE_code/run_umke_best.py\
+python REMOTE/ROMOTE_code/run_umke_best.py\
         --dataset_name=${DATASET_NAME} \
         --vit_name=${VIT_NAME} \
         --bert_name=${BERT_NAME} \

@@ -99,7 +99,6 @@ class MOREDataset(Dataset):
         self.img_path = img_path[mode] if img_path is not None else img_path
         self.dep_path = dep_path[mode] if dep_path is not None else dep_path
         self.cap_path = cap_path[mode] if cap_path is not None else cap_path
-        # 캡션 미사용: 파일 열지 않음
         if getattr(self.args, "use_cap", False) and self.cap_path:
             with open(self.cap_path, "r", encoding="utf-8") as f:
                 self.cap_dict = json.load(f)
@@ -154,21 +153,18 @@ class MOREDataset(Dataset):
         
         # ent image  
         visual_ents = self.data_dict['ent_dict'][imgid]  # {name:(box) , ...}
-        ent_names = list(visual_ents.keys())  # all visual entity names
-        # __getitem__에서 head_pos, tail_pos 바로 아래에 추가
+        ent_names = list(visual_ents.keys())  
         n = len(word_list)
 
         def bad_span(pos):
             if not (isinstance(pos, list) and len(pos) == 2):
                 return False
             s, e = int(pos[0]), int(pos[1])
-            # end 미포함 규칙 [s, e)
             return not (0 <= s < n and 0 < e <= n and s < e)
 
         if bad_span(head_pos) or bad_span(tail_pos):
             print(f"[BAD SPAN] img={imgid} n={n} head_pos={head_pos} tail_pos={tail_pos}")
 
-        # 비전 엔티티 이름-사전 불일치도 표시
         if len(head_pos) == 4 and head_d['name'] not in visual_ents:
             print(f"[BAD VISION] img={imgid} missing head_name={head_d['name']} keys={list(visual_ents.keys())}")
         if len(tail_pos) == 4 and tail_d['name'] not in visual_ents:

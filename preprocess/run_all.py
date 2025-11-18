@@ -1,20 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-One-shot REMOTE preprocessing pipeline.
-
-Stage order (output -> input chaining):
-1. create_dataset.py      : raw dialog → remote_re.jsonl
-2. split.py               : remote_re.jsonl → *_set_xywh.json
-3. coordinate_trans.py    : *_set_xywh.json → *_set_str.json
-4. str_to_list.py         : *_set_str.json → *_set.json
-5. minus_trans.py         : *_set.json → *_set_bbox_fixed.json
-6. pos_trans.py           : *_set*.json → pos_umke.json
-
-Each stage reuses the script's own default paths/settings, so update the
-individual script configs before running if needed.
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -70,7 +53,7 @@ def main(argv: Iterable[str] | None = None) -> None:
             raise FileNotFoundError(f"Script not found: {script_path}")
         run_stage(args.python, stage_name, script_path)
 
-    print("\n✅ All requested preprocessing stages finished.")
+    print("\nAll requested preprocessing stages finished.")
 
 
 if __name__ == "__main__":
