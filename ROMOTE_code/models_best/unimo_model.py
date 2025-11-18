@@ -94,6 +94,7 @@ class UnimoREModel(nn.Module):
             ent_idx_head=None,
             ent_idx_tail=None,
             position=None,
+            indices=None
     ):
         # dataset
         output, vision_output = self.model(input_ids=input_ids,
@@ -152,7 +153,13 @@ class UnimoREModel(nn.Module):
 
             count_ones = (head_entity_idx == -1) + (tail_entity_idx == -1) + (ent_idx_head[i] == -1) + (ent_idx_tail[i] == -1)
             
+            # count_ones 계산 직후
             if count_ones > 2:
+                has_s1 = input_ids[i].eq(self.head_entity_start).any().item()
+                has_s2 = input_ids[i].eq(self.tail_entity_start).any().item()
+                print(f"[WARN] sample_idx={int(indices[i]) if indices is not None else -1}, "
+                    f"has_s1={has_s1}, has_s2={has_s2}, "
+                    f"head_vis={int(ent_idx_head[i])}, tail_vis={int(ent_idx_tail[i])}")
                 # print("ent_idx_head:",ent_idx_head)
                 # print("ent_idx_tail:",ent_idx_tail)
                 print(head_entity_idx ,tail_entity_idx ,ent_idx_head[i] ,ent_idx_tail[i])

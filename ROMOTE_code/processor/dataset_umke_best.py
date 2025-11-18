@@ -28,36 +28,48 @@ class MOREProcessor(object):
     def load_from_file(self, mode="train"):
         load_file = self.data_path[mode]
         logger.info("Loading data from {}".format(load_file))
-        # txt
-        with open(load_file, "r", encoding="utf-8") as f:
-            lines = f.readlines()
-            words, relations, heads, tails, imgids, dataid = [], [], [], [], [], []
-            for i, line in enumerate(lines):
-                line = ast.literal_eval(line)  # str to dict
-                words.append(line['token'])
-                relations.append(line['relation'])
-                heads.append(line['h'])  # text {name, pos} 或 image {name, box}
-                tails.append(line['t'])  # text {name, pos} 或 image {name, box}
-                imgids.append(line['img_id'])
-                dataid.append(i)
 
-        assert len(words) == len(relations) == len(heads) == len(tails) == (len(imgids))
-        # print((len(imgids)))
-        # exit()
-        
-        #ent_dict 
+        with open(load_file, "r", encoding="utf-8") as f:
+            text = f.read().strip()
+
+        # 파일이 JSON 배열([ ... ])이면 통째로 읽고,
+        # JSONL(줄마다 객체)이면 라인별로 파싱
+        if text.startswith('['):
+            items = json.loads(text)  # JSON 배열
+        else:
+            items = []
+            for line in text.splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                items.append(ast.literal_eval(line))  # 기존 방식 유지
+
+        words, relations, heads, tails, imgids, dataid = [], [], [], [], [], []
+        for i, line in enumerate(items):
+            words.append(line['token'])
+            relations.append(line['relation'])
+            heads.append(line['h'])
+            tails.append(line['t'])
+            imgids.append(line['img_id'])
+            dataid.append(i)
+
+        assert len(words) == len(relations) == len(heads) == len(tails) == len(imgids)
+
+        # ent_dict
         ent_path = self.data_path[mode + "_ent_dict"]
-        
-        with open(ent_path, 'r') as f:
+        with open(ent_path, 'r', encoding="utf-8") as f:
             ent_imgs = json.load(f)
 
-        """
-        ent_imgs[01ba096b-11c5-51d6-adb0-0ba0a1cbe2c7.jpg]: {'[OBJ0]': (0.0158, 0.625, 0.0316, 0.395), '[OBJ1]': (0.5558, 0.6375, 0.1083, 0.35)}
-        ent_imgs,即ent_dict 为，图片中的实体位置
-        """
+        return {
+            'words': words,
+            'relations': relations,
+            'heads': heads,
+            'tails': tails,
+            'imgids': imgids,
+            'dataid': dataid,
+            'ent_dict': ent_imgs
+        }
         
-        return {'words': words, 'relations': relations, 'heads': heads, 'tails': tails, 'imgids': imgids,
-                'dataid': dataid, 'ent_dict': ent_imgs}
 
     def get_relation_dict(self):
         with open(self.re_path, 'r', encoding="utf-8") as f:
@@ -87,7 +99,13 @@ class MOREDataset(Dataset):
         self.img_path = img_path[mode] if img_path is not None else img_path
         self.dep_path = dep_path[mode] if dep_path is not None else dep_path
         self.cap_path = cap_path[mode] if cap_path is not None else cap_path
-        self.cap_dict = json.load(open(self.cap_path, 'r'))
+        # 캡션 미사용: 파일 열지 않음
+        if getattr(self.args, "use_cap", False) and self.cap_path:
+            with open(self.cap_path, "r", encoding="utf-8") as f:
+                self.cap_dict = json.load(f)
+        else:
+            self.cap_dict = None
+            self.args.use_cap = False
         # self.img_num = 10
         self.img_num = 12 #OBJ is range in 0~11
         self.mode = mode
@@ -137,6 +155,24 @@ class MOREDataset(Dataset):
         # ent image  
         visual_ents = self.data_dict['ent_dict'][imgid]  # {name:(box) , ...}
         ent_names = list(visual_ents.keys())  # all visual entity names
+        # __getitem__에서 head_pos, tail_pos 바로 아래에 추가
+        n = len(word_list)
+
+        def bad_span(pos):
+            if not (isinstance(pos, list) and len(pos) == 2):
+                return False
+            s, e = int(pos[0]), int(pos[1])
+            # end 미포함 규칙 [s, e)
+            return not (0 <= s < n and 0 < e <= n and s < e)
+
+        if bad_span(head_pos) or bad_span(tail_pos):
+            print(f"[BAD SPAN] img={imgid} n={n} head_pos={head_pos} tail_pos={tail_pos}")
+
+        # 비전 엔티티 이름-사전 불일치도 표시
+        if len(head_pos) == 4 and head_d['name'] not in visual_ents:
+            print(f"[BAD VISION] img={imgid} missing head_name={head_d['name']} keys={list(visual_ents.keys())}")
+        if len(tail_pos) == 4 and tail_d['name'] not in visual_ents:
+            print(f"[BAD VISION] img={imgid} missing tail_name={tail_d['name']} keys={list(visual_ents.keys())}")
 
         """
         visual_ents: {'[OBJ0]': (0.8317, 0.6625, 0.28, 0.66), '[OBJ1]': (0.3842, 0.5587, 0.3683, 0.8675)}
@@ -264,4 +300,4 @@ class MOREDataset(Dataset):
         if self.args.use_box:
             ret_dict.update({'position': torch.tensor(position)})
             
-        return ret_dict, re_label
+        return ret_dict, re_label, idx

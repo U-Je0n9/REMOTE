@@ -3,3 +3,10 @@
 /our_datasets/
 /UMKE_datasets/
 /datasets/
+/datasets_UMKE/
+/ckpt/
+/Depth-Anything-V2/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd

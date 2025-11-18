@@ -7,7 +7,7 @@ import random
 from torch.utils.data import DataLoader
 from models_best.unimo_model import UnimoREModel
 from processor.dataset_umke_best import MOREProcessor, MOREDataset
-from modules.train import BertTrainer
+from modules.train_more import BertTrainer
 import warnings
 from datetime import datetime
 import transformers
@@ -29,46 +29,46 @@ logger = logging.getLogger(__name__)
 
 DATA_PATH = {
     'UMKE': {
-        'train': '/data/umke_partner/train_set.json',
-        'valid': '/data/umke_partner/val_set.json',
-        'test': '/data/umke_partner/test_set.json',
-        'train_ent_dict': '/data/umke_partner/pos_umke.json',
-        'valid_ent_dict': '/data/umke_partner/pos_umke.json',
-        'test_ent_dict': '/data/umke_partner/pos_umke.json',
+        'train': '/home/ujeong/KETI/REMOTE/datasets/train_set.json',
+        'valid': '/home/ujeong/KETI/REMOTE/datasets/val_set.json',
+        'test': '/home/ujeong/KETI/REMOTE/datasets/test_set.json',
+        'train_ent_dict': '/home/ujeong/KETI/REMOTE/datasets/pos_umke.json',
+        'valid_ent_dict': '/home/ujeong/KETI/REMOTE/datasets/pos_umke.json',
+        'test_ent_dict': '/home/ujeong/KETI/REMOTE/datasets/pos_umke.json',
     }
 }
 
 
 IMG_PATH = {
     'UMKE': {
-        'train': '/data/UMKE_IMG',
-        'valid': '/data/UMKE_IMG',
-        'test': '/data/UMKE_IMG',
+        'train': '//home/ujeong/KETI/REMOTE/datasets/UMKE_IMG',
+        'valid': '//home/ujeong/KETI/REMOTE/datasets/UMKE_IMG',
+        'test': '//home/ujeong/KETI/REMOTE/datasets/UMKE_IMG',
     }
 }
 
 
 DEP_PATH = {
     'UMKE': {
-        'train': '/data/depth_data_umke',
-        'valid': '/data/depth_data_umke',
-        'test': '/data/depth_data_umke',
+        'train': '/home/ujeong/KETI/REMOTE/datasets/depth_data_umke',
+        'valid': '/home/ujeong/KETI/REMOTE/datasets/depth_data_umke',
+        'test': '/home/ujeong/KETI/REMOTE/datasets/depth_data_umke',
     }
 }
 
 
-#qwen2.5 vl
-CAP_PATH = {
-    'UMKE': {
-        'train': '/data/umke_partner/cap_qwenvl_simply.json',
-        'valid': '/data/umke_partner/cap_qwenvl_simply.json',
-        'test': '/data/umke_partner/cap_qwenvl_simply.json',
-    }
-}
+# #qwen2.5 vl
+# None = {
+#     'UMKE': {
+#         'train': '/home/ujeong/KETI/REMOTE/datasets/cap_qwenvl_simply.json',
+#         'valid': '/home/ujeong/KETI/REMOTE/datasets/cap_qwenvl_simply.json',
+#         'test': '/home/ujeong/KETI/REMOTE/datasets/cap_qwenvl_simply.json',
+#     }
+# }
 
 
 #relation ID key-value
-re_path = '/data/lxk2019/UMREF/MORE_test/rel2id_umke_partner.json'
+re_path = '/home/ujeong/KETI/REMOTE/ROMOTE_code/rel2id_umke_partner.json'
 
 #seed
 def set_seed(seed=2024):
@@ -108,8 +108,8 @@ def main():
     set_seed(args.seed)  # set seed, default is 1
 
     
-    data_path, img_path, dep_path, cap_path = DATA_PATH[args.dataset_name], IMG_PATH[args.dataset_name], DEP_PATH[args.dataset_name], CAP_PATH[args.dataset_name]
-    # print(data_path, img_path, dep_path, cap_path)
+    data_path, img_path, dep_path = DATA_PATH[args.dataset_name], IMG_PATH[args.dataset_name], DEP_PATH[args.dataset_name]
+    # print(data_path, img_path, dep_path, None)
     # exit()
     data_process, dataset_class = MOREProcessor, MOREDataset
     logger.info(data_path)
@@ -134,13 +134,13 @@ def main():
     if args.do_test:
         processor = data_process(data_path, re_path, args.bert_name, args.vit_name)
 
-        train_dataset = dataset_class(processor, img_path, dep_path, cap_path, args, mode='train')
+        train_dataset = dataset_class(processor, img_path, dep_path, None, args, mode='train')
         train_dataloader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=4, pin_memory=True)
 
-        valid_dataset = dataset_class(processor, img_path, dep_path, cap_path, args, mode='valid')
+        valid_dataset = dataset_class(processor, img_path, dep_path, None, args, mode='valid')
         valid_dataloader = DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=False, num_workers=4, pin_memory=True)
 
-        test_dataset = dataset_class(processor, img_path, dep_path, cap_path, args, mode='test')
+        test_dataset = dataset_class(processor, img_path, dep_path, None, args, mode='test')
         test_dataloader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=4, pin_memory=True)
 
         re_dict = processor.get_relation_dict()
@@ -164,13 +164,13 @@ def main():
         
         processor = data_process(data_path, re_path, args.bert_name, args.vit_name)
 
-        train_dataset = dataset_class(processor, img_path, dep_path, cap_path, args, mode='train')
+        train_dataset = dataset_class(processor, img_path, dep_path, None, args, mode='train')
         train_dataloader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=4, pin_memory=True)
 
-        valid_dataset = dataset_class(processor, img_path, dep_path, cap_path, args, mode='valid')
+        valid_dataset = dataset_class(processor, img_path, dep_path, None, args, mode='valid')
         valid_dataloader = DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=False, num_workers=4, pin_memory=True)
 
-        test_dataset = dataset_class(processor, img_path, dep_path, cap_path, args, mode='test')
+        test_dataset = dataset_class(processor, img_path, dep_path, None, args, mode='test')
         test_dataloader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=4, pin_memory=True)
 
         

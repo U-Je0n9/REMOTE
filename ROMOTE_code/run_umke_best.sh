@@ -1,15 +1,16 @@
 #!/bin/bash
 
 DATASET_NAME="UMKE"
-BERT_NAME='/data/bert-base-uncased'
-VIT_NAME='/data/clip-vit-base-patch32'
+BERT_NAME='bert-base-multilingual-uncased'
+VIT_NAME='openai/clip-vit-base-patch32'
+CUDA_VISIBLE_DEVICES=0
 
-CUDA_VISIBLE_DEVICES=1 python run_umke_best.py \
+python /home/ujeong/KETI/REMOTE/ROMOTE_code/run_umke_best.py\
         --dataset_name=${DATASET_NAME} \
         --vit_name=${VIT_NAME} \
         --bert_name=${BERT_NAME} \
-        --num_epochs=30 \
-        --batch_size=32 \
+        --num_epochs=3 \
+        --batch_size=16 \
         --lr=1e-5 \
         --warmup_ratio=0.06 \
         --eval_begin_epoch=1 \
@@ -17,6 +18,5 @@ CUDA_VISIBLE_DEVICES=1 python run_umke_best.py \
         --do_train \
         --use_dep \
         --use_box \
-        --use_cap \
-        --max_seq=128 \
+        --max_seq=256 \
         --save_path="ckpt"

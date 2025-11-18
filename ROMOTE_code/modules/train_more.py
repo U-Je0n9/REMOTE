@@ -6,6 +6,26 @@ from transformers.optimization import get_linear_schedule_with_warmup
 from .metrics import eval_result
 import gc
 import resource
+def _move_to_device(x, device):
+    if torch.is_tensor(x):
+        return x.to(device)
+    if isinstance(x, dict):
+        return {k: _move_to_device(v, device) for k, v in x.items()}
+    if isinstance(x, (list, tuple)):
+        return type(x)(_move_to_device(v, device) for v in x)
+    return x
+
+def _unpack_and_move(batch, device):  # 배치 포맷(2-tuple/3-tuple)을 통일 처리하는 헬퍼
+    try:
+        ret_dict, labels, indices = batch  # (ret_dict, labels, indices) 포맷 대응
+    except ValueError:
+        ret_dict, labels = batch  # (ret_dict, labels) 옛 포맷 대응
+        indices = None
+    ret_dict = _move_to_device(ret_dict, device)  # dict 내부 텐서까지 전부 device로 이동
+    labels = labels.to(device)  # 레이블도 device로 이동
+    if indices is not None:
+        ret_dict["indices"] = indices if torch.is_tensor(indices) else torch.tensor(indices, device=device)  # indices 있을 때만 추가
+    return ret_dict, labels  # 모델 입력용 params와 labels 반환
 
 class BertTrainer(object):
     def __init__(self, train_data=None, dev_data=None, test_data=None, re_dict=None, model=None, process=None,
@@ -38,6 +58,7 @@ class BertTrainer(object):
             self.train_num_steps = len(self.train_data) * args.num_epochs
             self.before_multimodal_train()
 
+
     def train(self):
         self.step = 0
         self.model.train()
@@ -62,10 +83,40 @@ class BertTrainer(object):
                 pbar.set_description_str(desc="Epoch {}/{}".format(epoch, self.args.num_epochs))
                 for batch in self.train_data:
                     self.step += 1
-                    batch = (tup.to(self.args.device) if isinstance(tup, torch.Tensor) else tup for tup in batch)
-                    params , labels = batch
 
-                    (loss, logits), labels = self._step(params, labels)                 
+
+                    # === 배치 언패킹: (ret_dict, labels, indices) ===
+                    try:
+                        ret_dict, labels, indices = batch
+                    except ValueError:
+                        # 예전 포맷이면 (ret_dict, labels)만 올 수 있음
+                        ret_dict, labels = batch
+                        indices = None
+
+                    # === device로 모두 이동 (dict 내부 텐서까지) ===
+                    ret_dict = _move_to_device(ret_dict, self.args.device)
+                    labels   = labels.to(self.args.device)
+
+                    # === 모델에 넘길 params 구성 ===
+                    params = ret_dict
+                    if indices is not None:
+                        # 인덱스는 CPU여도 무방하지만, 텐서면 type 맞추기
+                        if torch.is_tensor(indices):
+                            params["indices"] = indices
+                        else:
+                            # 리스트/배열이면 텐서로
+                            params["indices"] = torch.tensor(indices, device=self.args.device)
+
+                    # === 한 스텝 ===
+                    (loss, logits), labels = self._step(params, labels)
+
+
+
+
+                    # batch = (tup.to(self.args.device) if isinstance(tup, torch.Tensor) else tup for tup in batch)
+                    # params , labels = batch
+
+                    # (loss, logits), labels = self._step(params, labels)                 
                     avg_loss += loss.detach().cpu().item()
 
                     loss.backward()
@@ -111,8 +162,8 @@ class BertTrainer(object):
                 total_loss = 0
                 for batch in self.dev_data:
                     step += 1
-                    batch = (tup.to(self.args.device) if isinstance(tup, torch.Tensor) else tup for tup in batch)
-                    params , labels = batch
+                    # batch = (tup.to(self.args.device) if isinstance(tup, torch.Tensor) else tup for tup in batch)
+                    params , labels = _unpack_and_move(batch, self.args.device)
                     # (loss, logits), labels = self._step(batch)  
                     (loss, logits), labels = self._step(params, labels)
                     # (loss, logits), labels  = self._step(batch)
@@ -165,11 +216,11 @@ class BertTrainer(object):
                 pbar.set_description_str(desc="Testing")
                 total_loss = 0
                 for batch in self.test_data:
-                    batch = (tup.to(self.args.device) if isinstance(tup, torch.Tensor) else tup for tup in batch)
-                    params , labels = batch
+                    #batch = (tup.to(self.args.device) if isinstance(tup, torch.Tensor) else tup for tup in batch)
+                    params, labels = _unpack_and_move(batch, self.args.device)
                     input_ids = params['input_ids']
                     position = params['position']
-                    ent_idx = params['ent_idx']
+                    ent_idx   = params.get('ent_idx',   None)
                     (loss, logits), labels = self._step(params, labels)
                     # (loss, logits), labels = self._step(batch)  # logits: batch, 3
                     total_loss += loss.detach().cpu().item()
@@ -179,7 +230,10 @@ class BertTrainer(object):
                     pred_labels.extend(preds.view(-1).detach().cpu().tolist())
                     input_ids_list.extend(input_ids.detach().cpu().tolist())
                     position_list.extend(position.detach().cpu().tolist())
-                    ent_idx_list.extend(ent_idx.detach().cpu().tolist())
+                    if ent_idx is not None:
+                        ent_idx_list.extend(ent_idx.detach().cpu().tolist() if torch.is_tensor(ent_idx) else ent_idx)
+                    else:
+                        ent_idx_list.extend([None] * preds.shape[0])
                     # position_idx_list.extend(position_idx.detach().cpu().tolist())
                     pbar.update()
                 # evaluate done
@@ -218,22 +272,22 @@ class BertTrainer(object):
                         samp_ent_idx = ent_idx_list[i]
                         
                         
-                        if isinstance(samp_ent_idx, int):
-                            samp_position_values = [samp_position[samp_ent_idx]]
-                        else:
-                            samp_position_values = samp_position[samp_ent_idx]
+                        # if isinstance(samp_ent_idx, int):
+                        #     samp_position_values = [samp_position[samp_ent_idx]]
+                        # else:
+                        #     samp_position_values = samp_position[samp_ent_idx]
                         
 
-                        formatted_position = []
-                        for pos_list in samp_position_values:
-                            if isinstance(pos_list, list):
-                                formatted_position.extend(['{:.4f}'.format(pos) for pos in pos_list])
-                            else:
-                                print(f"Unsupported type: {type(pos_list)}")
-                                formatted_position.append(str(pos_list))
+                        # formatted_position = []
+                        # for pos_list in samp_position_values:
+                        #     if isinstance(pos_list, list):
+                        #         formatted_position.extend(['{:.4f}'.format(pos) for pos in pos_list])
+                        #     else:
+                        #         print(f"Unsupported type: {type(pos_list)}")
+                        #         formatted_position.append(str(pos_list))
                         
                         fout.write(f"input_ids: " + ' '.join(map(str, samp_input_ids)) + '\n')
-                        fout.write(f"position: " + ' '.join(formatted_position) + '\n')
+                        # fout.write(f"position: " + ' '.join(formatted_position) + '\n')
                         fout.write(f"pred_label: " + ' '.join(map(str, [samp_pred_label])) + '\n')  
                         fout.write(f"true_label: " + ' '.join(map(str, [samp_true_label])) + '\n' + '\n')  
                     fout.close()
@@ -263,8 +317,8 @@ class BertTrainer(object):
                 pbar.set_description_str(desc="Testing")
                 total_loss = 0
                 for batch in self.test_data:
-                    batch = (tup.to(self.args.device) if isinstance(tup, torch.Tensor) else tup for tup in batch)
-                    params , labels = batch
+                    #batch = (tup.to(self.args.device) if isinstance(tup, torch.Tensor) else tup for tup in batch)
+                    params, labels = _unpack_and_move(batch, self.args.device)
                     input_ids = params['input_ids']
                     position = params['position']
                     ent_idx = params['ent_idx']
