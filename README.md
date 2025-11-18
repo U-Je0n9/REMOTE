@@ -79,7 +79,7 @@ bash ROMOTE_code/run_umke_best.sh
 ```bash
 python ROMOTE_code/run_umke_best.py \
   --do_test \
-  --test_path /path/to/test_set_bbox_fixed.json \
+  --test_path /path/to/test_set.json \
   --batch_size 16 \
   --init_checkpoint ckpt/UMKE_16_1e-05__20251029_105012
 ```
